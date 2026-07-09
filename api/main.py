@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 import joblib
 
@@ -7,7 +8,16 @@ app = FastAPI(
     title="Traffic Congestion Prediction API",
     version="1.0.0"
 )
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:5174",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 # -------------------------
 # Load Model
 # -------------------------
@@ -71,6 +81,15 @@ def predict(data: TrafficInput):
 
     prediction = model.predict(input_df)[0]
 
+    # Determine traffic status
+    if prediction <= 1500:
+        traffic_status = "🟢 Low Traffic"
+    elif prediction <= 4000:
+        traffic_status = "🟡 Medium Traffic"
+    else:
+        traffic_status = "🔴 High Traffic"
+
     return {
-        "predicted_traffic_volume": round(float(prediction), 2)
+        "predicted_traffic_volume": round(float(prediction), 2),
+        "traffic_status": traffic_status
     }
