@@ -35,10 +35,12 @@ def train():
     )
 
     model = RandomForestRegressor(
-        n_estimators=100,
-        random_state=42,
-        n_jobs=-1,
-    )
+    n_estimators=20,
+    max_depth=15,
+    min_samples_leaf=5,
+    random_state=42,
+    n_jobs=-1,
+)
 
     model.fit(X_train, y_train)
 
@@ -52,7 +54,7 @@ def train():
     print(f"RMSE: {rmse:.2f}")
     print(f"R²  : {r2:.4f}")
 
-    artifact_dir = Path("../artifacts")
+    artifact_dir = Path("../models")
     artifact_dir.mkdir(exist_ok=True)
 
     joblib.dump(

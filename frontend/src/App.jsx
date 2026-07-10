@@ -18,6 +18,7 @@ function App() {
 
   const [prediction, setPrediction] = useState(null);
   const [trafficStatus, setTrafficStatus] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -42,6 +43,8 @@ function App() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    setLoading(true);
+
     try {
       const response = await axios.post(
         "http://127.0.0.1:8000/predict",
@@ -51,10 +54,21 @@ function App() {
       setPrediction(response.data.predicted_traffic_volume);
       setTrafficStatus(response.data.traffic_status);
     } catch (error) {
-      console.log(error.response);
-      console.log(error.response?.data);
-      alert("Prediction Failed");
+      console.error(error);
+      alert("Prediction Failed!");
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const getTrafficMessage = () => {
+    if (trafficStatus.includes("Low"))
+      return "✅ Roads are expected to be clear. Travel should be smooth.";
+
+    if (trafficStatus.includes("Medium"))
+      return "⚠️ Moderate congestion expected. Plan a little extra travel time.";
+
+    return "🚨 Heavy traffic expected. Consider leaving earlier or taking an alternate route.";
   };
 
   return (
@@ -62,54 +76,65 @@ function App() {
       <h1>🚦 Traffic Congestion Prediction</h1>
 
       <p className="subtitle">
-        Predict traffic volume using Machine Learning
+        Predict road traffic using Machine Learning
       </p>
 
       <form className="form" onSubmit={handleSubmit}>
-
         <div className="form-group">
-          <label>Temperature (K)</label>
+          <label>🌡️ Temperature (K)</label>
           <input
             type="number"
             name="temp"
             placeholder="Enter temperature"
+            value={formData.temp}
             onChange={handleChange}
+            required
           />
         </div>
 
         <div className="form-group">
-          <label>Rain (mm)</label>
+          <label>🌧️ Rain (mm)</label>
           <input
             type="number"
             name="rain_1h"
             placeholder="Enter rainfall"
+            value={formData.rain_1h}
             onChange={handleChange}
+            required
           />
         </div>
 
         <div className="form-group">
-          <label>Snow (mm)</label>
+          <label>❄️ Snow (mm)</label>
           <input
             type="number"
             name="snow_1h"
             placeholder="Enter snowfall"
+            value={formData.snow_1h}
             onChange={handleChange}
+            required
           />
         </div>
 
         <div className="form-group">
-          <label>Cloud Coverage (%)</label>
+          <label>☁️ Cloud Coverage (%)</label>
           <input
             type="number"
             name="clouds_all"
             placeholder="Enter cloud coverage"
+            value={formData.clouds_all}
             onChange={handleChange}
+            required
           />
         </div>
 
         <div className="form-group">
-          <label>Weather</label>
-          <select name="weather_main" onChange={handleChange}>
+          <label>🌤️ Weather</label>
+          <select
+            name="weather_main"
+            value={formData.weather_main}
+            onChange={handleChange}
+          >
             <option>Clouds</option>
             <option>Clear</option>
             <option>Rain</option>
@@ -119,19 +144,27 @@ function App() {
         </div>
 
         <div className="form-group">
-          <label>Hour</label>
-          <select name="hour" onChange={handleChange}>
+          <label>🕒 Hour</label>
+          <select
+            name="hour"
+            value={formData.hour}
+            onChange={handleChange}
+          >
             {[...Array(24)].map((_, i) => (
               <option key={i} value={i}>
-                {i}
+                {i}:00
               </option>
             ))}
           </select>
         </div>
 
         <div className="form-group">
-          <label>Day of Week</label>
-          <select name="day_of_week" onChange={handleChange}>
+          <label>📅 Day of Week</label>
+          <select
+            name="day_of_week"
+            value={formData.day_of_week}
+            onChange={handleChange}
+          >
             <option>Monday</option>
             <option>Tuesday</option>
             <option>Wednesday</option>
@@ -143,8 +176,12 @@ function App() {
         </div>
 
         <div className="form-group">
-          <label>Month</label>
-          <select name="month" onChange={handleChange}>
+          <label>📆 Month</label>
+          <select
+            name="month"
+            value={formData.month}
+            onChange={handleChange}
+          >
             <option>January</option>
             <option>February</option>
             <option>March</option>
@@ -161,46 +198,62 @@ function App() {
         </div>
 
         <div className="form-group">
-          <label>Weekend</label>
-          <select name="is_weekend" onChange={handleChange}>
+          <label>🏖️ Weekend</label>
+          <select
+            name="is_weekend"
+            value={formData.is_weekend}
+            onChange={handleChange}
+          >
             <option value={0}>No</option>
             <option value={1}>Yes</option>
           </select>
         </div>
 
         <div className="form-group">
-          <label>Holiday</label>
-          <select name="is_holiday" onChange={handleChange}>
+          <label>🎉 Holiday</label>
+          <select
+            name="is_holiday"
+            value={formData.is_holiday}
+            onChange={handleChange}
+          >
             <option value={0}>No</option>
             <option value={1}>Yes</option>
           </select>
         </div>
 
-        <button type="submit">
-          Predict Traffic
+        <button type="submit" disabled={loading}>
+          {loading ? "⏳ Predicting..." : "🚦 Predict Traffic"}
         </button>
-
       </form>
 
       {prediction !== null && (
-        <div
-          style={{
-            marginTop: "30px",
-            padding: "20px",
-            borderRadius: "10px",
-            backgroundColor: "#f8f9fa",
-            textAlign: "center",
-          }}
-        >
-          <h2>🚗 Predicted Traffic Volume</h2>
+        <div className="result-card">
+          <h2>🚗 Prediction Result</h2>
 
-          <h1 style={{ color: "#0d6efd" }}>
-            {prediction.toFixed(2)} vehicles/hour
-          </h1>
+          <div className="result-value">
+            {Math.round(prediction).toLocaleString()} Vehicles / Hour
+          </div>
 
-          <h2>{trafficStatus}</h2>
+          <div
+            className={
+              trafficStatus.includes("Low")
+                ? "status low"
+                : trafficStatus.includes("Medium")
+                ? "status medium"
+                : "status high"
+            }
+          >
+            {trafficStatus}
+          </div>
+
+          <p className="status-message">{getTrafficMessage()}</p>
         </div>
       )}
+
+      <div className="footer">
+        🚀 Built with <strong>React</strong>, <strong>FastAPI</strong> &{" "}
+        <strong>Scikit-learn</strong>
+      </div>
     </div>
   );
 }
