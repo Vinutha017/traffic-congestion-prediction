@@ -11,4 +11,3 @@ env/
 .idea/
 
 *.log
-models/traffic_congestion_rf_model.joblib
